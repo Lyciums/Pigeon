@@ -14,6 +14,14 @@ func (hm HeaderMap) GetOrDefault(name, defaultValue string) string {
 	return defaultValue
 }
 
+func (hm HeaderMap) Copy() HeaderMap {
+	nhm := NewHeaderMap(len(hm))
+	for k, v := range hm {
+		nhm.Set(k, v)
+	}
+	return nhm
+}
+
 func (hm HeaderMap) Get(name string) string {
 	return hm.GetOrDefault(name, "")
 }
