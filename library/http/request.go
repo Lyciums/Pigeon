@@ -2,13 +2,16 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 
-	"Pigeon/library/utils"
+	jsoniter "github.com/json-iterator/go"
+	"sextube/utils"
 )
 
 var DefaultClient = http.DefaultClient
@@ -20,14 +23,43 @@ func NewClient() *http.Client {
 
 // Get config：*Config or request url
 // client：*http.Client or nil (using default client)
-func Get(config interface{}, client *http.Client) (string, error) {
-	rsp, err := Request(config, client)
-	if err != nil {
-		return ``, err
-	}
-	return readResponseBody(rsp.Body)
+
+func GetByURL(url string, client *http.Client) (*http.Response, error) {
+	return GetByConfig(&Config{URL: url}, client)
 }
 
+func GetByConfig(config *Config, client *http.Client) (*http.Response, error) {
+	if config == nil {
+		return nil, errors.New("GetByConfig: config cannot be nil")
+	}
+	return get(config, client)
+}
+
+// Get returns string
+func Get(config interface{}, client *http.Client) ([]byte, error) {
+	rsp, err := get(parseToRequestConfig(config), client)
+	if err != nil {
+		return []byte{}, err
+	}
+	return ReadResponseBody(rsp.Body)
+}
+
+func get(config *Config, client *http.Client) (*http.Response, error) {
+	return Request(config, client)
+}
+
+func HeadByURL(url string, client *http.Client) (*http.Response, error) {
+	return HeadByConfig(&Config{URL: url}, client)
+}
+
+func HeadByConfig(config *Config, client *http.Client) (*http.Response, error) {
+	if config == nil {
+		return nil, errors.New("HeadByConfig: config cannot be nil")
+	}
+	return head(config, client)
+}
+
+// Head returns map[string][]string
 func Head(config interface{}, client *http.Client) http.Header {
 	h, _ := head(parseToRequestConfig(config), client)
 	return h.Header
@@ -38,12 +70,24 @@ func head(config *Config, client *http.Client) (*http.Response, error) {
 	return Request(config, client)
 }
 
-func Post(config interface{}, client *http.Client) (string, error) {
+func PostByURL(url string, client *http.Client) (*http.Response, error) {
+	return PostByConfig(&Config{URL: url}, client)
+}
+
+func PostByConfig(config *Config, client *http.Client) (*http.Response, error) {
+	if config == nil {
+		return nil, errors.New("PostByConfig: config cannot be nil")
+	}
+	return post(config, client)
+}
+
+// Post returns []byte
+func Post(config interface{}, client *http.Client) ([]byte, error) {
 	rsp, err := post(parseToRequestConfig(config), client)
 	if err != nil {
-		return ``, err
+		return []byte{}, err
 	}
-	return readResponseBody(rsp.Body)
+	return ReadResponseBody(rsp.Body)
 }
 
 func post(config *Config, client *http.Client) (*http.Response, error) {
@@ -78,7 +122,7 @@ func post(config *Config, client *http.Client) (*http.Response, error) {
 // func Options(config Config) *http.Response {}
 
 // Request send base request
-func Request(config interface{}, client *http.Client) (*http.Response, error) {
+func Request(config *Config, client *http.Client) (*http.Response, error) {
 	requestConfig := parseToRequestConfig(config)
 	var body io.Reader
 	if data, ok := requestConfig.Data.(io.Reader); ok {
@@ -106,17 +150,33 @@ func SendHttpRequest(request *http.Request, client *http.Client, config *Config)
 	return client.Do(request)
 }
 
+func marshalRequestDataValue(v reflect.Value) string {
+	vt := v.Kind().String()
+	// 数字就直接转换，否则直接 json
+	if strings.HasPrefix(vt, "int") || strings.HasPrefix(vt, "string") {
+		return fmt.Sprintf("%v", v)
+	}
+	json, _ := jsoniter.Marshal(v.Interface())
+	return string(json)
+}
+
 func parseRequestData(reqData interface{}) io.Reader {
 	data := url.Values{}
-	switch requestData := reqData.(type) {
-	case map[string]string:
-		for k, v := range requestData {
-			data.Add(k, v)
+	reqDataType := reflect.TypeOf(reqData)
+	// 匹配到是 map 类型,把值转换成字符串
+	if strings.HasPrefix(reqDataType.String(), "map[string]") {
+		reqDataValue := reflect.ValueOf(reqData)
+		keys := reqDataValue.MapKeys()
+		for _, k := range keys {
+			data.Add(k.String(), marshalRequestDataValue(reqDataValue.MapIndex(k)))
 		}
-	case string:
-		data, _ = url.ParseQuery(requestData)
-	case *Files:
-		return requestData.Encode()
+	} else {
+		switch requestData := reqData.(type) {
+		case string:
+			data, _ = url.ParseQuery(requestData)
+		case *Files:
+			return requestData.Encode()
+		}
 	}
 	return strings.NewReader(data.Encode())
 }
@@ -133,19 +193,12 @@ func parseToRequestConfig(config interface{}) *Config {
 	return &Config{}
 }
 
-func ReadResponseBody(rsp *http.Response) string {
-	body, err := readResponseBody(rsp.Body)
-	if err != nil {
-		return ""
-	}
-	return body
+func ReadResponseBody(body io.ReadCloser) ([]byte, error) {
+	return ioutil.ReadAll(body)
 }
 
-func readResponseBody(body io.ReadCloser) (string, error) {
+func ReadResponseBodyString(body io.ReadCloser) (string, error) {
 	// read response
-	rsp, err := ioutil.ReadAll(body)
-	if err != nil {
-		return "", err
-	}
-	return utils.BytesToString(rsp), nil
+	rsp, err := ReadResponseBody(body)
+	return utils.BytesToString(rsp), err
 }
