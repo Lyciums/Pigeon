@@ -21,6 +21,7 @@ func NewClient() *http.Client {
 	return &http.Client{}
 }
 
+
 // Get config：*Config or request url
 // client：*http.Client or nil (using default client)
 
