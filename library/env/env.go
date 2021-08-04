@@ -21,3 +21,7 @@ func WriteByKey(key, value string) {
 func WriteByMap(em map[string]string) {
 	_ = godotenv.Write(em, ".env")
 }
+
+func init() {
+	_ = godotenv.Load()
+}
