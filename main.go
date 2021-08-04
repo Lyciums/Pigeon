@@ -5,8 +5,6 @@ import (
 	"Pigeon/library/env"
 	"github.com/fvbock/endless"
 	"github.com/gin-gonic/gin"
-	// load .env file
-	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
