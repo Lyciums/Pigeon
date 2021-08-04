@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"time"
+	"unsafe"
 )
 
 type Config struct {
@@ -21,6 +22,10 @@ func (cfg *Config) ApplyToHttpClient(client *http.Client) *http.Client {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: cfg.SkipVerify},
 	}
 	return client
+}
+
+func (cfg *Config) Copy() Config {
+	return *(*Config)(unsafe.Pointer(cfg))
 }
 
 func (cfg *Config) ClearHeader() *Config {

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"Pigeon/library/utils"
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/json-iterator/go"
 )
 
 var DefaultClient = http.DefaultClient
@@ -45,6 +45,7 @@ func Get(config interface{}, client *http.Client) ([]byte, error) {
 }
 
 func get(config *Config, client *http.Client) (*http.Response, error) {
+	config.Method = "GET"
 	return Request(config, client)
 }
 
@@ -156,8 +157,8 @@ func marshalRequestDataValue(v reflect.Value) string {
 	if strings.HasPrefix(vt, "int") || strings.HasPrefix(vt, "string") {
 		return fmt.Sprintf("%v", v)
 	}
-	json, _ := jsoniter.Marshal(v.Interface())
-	return string(json)
+	r, _ := json.Marshal(v.Interface())
+	return string(r)
 }
 
 func parseRequestData(reqData interface{}) io.Reader {

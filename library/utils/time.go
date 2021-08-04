@@ -7,9 +7,17 @@ import (
 
 var (
 	// 默认日期格式
-	defaultDateFormat = "0000-00-00 00:00:00"
+	defaultDateFormat = "2006-01-02 15:04:05"
 	// 默认时区
 	defaultDateLocation = "Asia/Shanghai"
+	// SecondsPerMinute 定义每分钟的秒数
+	SecondsPerMinute = 60
+	// SecondsPerHour 定义每小时的秒数
+	SecondsPerHour = SecondsPerMinute * 60
+	// SecondsPerDay 定义每天的秒数
+	SecondsPerDay = SecondsPerHour * 24
+	// SecondsPerWeek 每周的秒数
+	SecondsPerWeek = SecondsPerDay * 7
 )
 
 // SetDefaultDateFormat 设置默认日期格式
@@ -22,9 +30,15 @@ func SetDefaultDateLocation(location string) {
 	defaultDateLocation = location
 }
 
+
 // GetCurrentTimestamp 获取当前时间戳
 func GetCurrentTimestamp() int64 {
 	return time.Now().Unix()
+}
+
+// FormatCurrentTime 获取当前时间戳
+func FormatCurrentTime(format string) string {
+	return time.Now().Format(format)
 }
 
 // GetCurrentTimestampString 获取当前时间戳字符串
