@@ -101,9 +101,15 @@ func post(config *Config, client *http.Client) (*http.Response, error) {
 	if _, ok := config.Headers[`Content-Type`]; !ok {
 		config.Headers[`Content-Type`] = `application/x-www-form-urlencoded`
 	}
+	// data for payload
+	if config.Payload {
+		config.Data = strings.NewReader(
+			marshalRequestDataValue(reflect.ValueOf(config.Data)))
+		return Request(config, client)
+	}
 	var data interface{}
 	switch config.Data.(type) {
-	// has file
+	// data type is files
 	case *Files:
 		if f := config.Data.(*Files); f.CountFile() > 0 {
 			go f.PipeFile()()
@@ -164,6 +170,10 @@ func marshalRequestDataValue(v reflect.Value) string {
 func parseRequestData(reqData interface{}) io.Reader {
 	data := url.Values{}
 	reqDataType := reflect.TypeOf(reqData)
+	// 不传入数据
+	if reqData == nil {
+		return strings.NewReader("")
+	}
 	// 匹配到是 map 类型,把值转换成字符串
 	if strings.HasPrefix(reqDataType.String(), "map[string]") {
 		reqDataValue := reflect.ValueOf(reqData)
