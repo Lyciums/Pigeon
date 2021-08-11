@@ -13,6 +13,7 @@ type Config struct {
 	Data       interface{}
 	Headers    HeaderMap
 	Timeout    int
+	Payload    bool
 	SkipVerify bool
 }
 
