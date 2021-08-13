@@ -7,7 +7,6 @@ type MutexLock struct {
 func (l *MutexLock) Lock() {
 	if l.mutex == nil {
 		l.mutex = make(chan struct{}, 1)
-		// l.Unlock()
 	}
 	l.mutex <- struct{}{}
 }
