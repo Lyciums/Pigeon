@@ -14,11 +14,16 @@ import (
 	json "github.com/json-iterator/go"
 )
 
-var DefaultClient = http.DefaultClient
+var DefaultClient = NewClient()
 
 // NewClient create new http client
 func NewClient() *http.Client {
-	return &http.Client{}
+	return &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			req.Header.Set("Cookie", req.Response.Cookies()[0].String())
+			return nil
+		},
+	}
 }
 
 // Get config：*Config or request url
@@ -130,13 +135,13 @@ func post(config *Config, client *http.Client) (*http.Response, error) {
 
 // Request send base request
 func Request(config *Config, client *http.Client) (*http.Response, error) {
-	requestConfig := parseToRequestConfig(config)
-	var body io.Reader
-	if data, ok := requestConfig.Data.(io.Reader); ok {
-		body = data
+	config.Method = strings.ToUpper(config.Method)
+	cfg := parseToRequestConfig(config)
+	if _, ok := cfg.Data.(io.Reader); !ok {
+		cfg.Data = parseRequestData(cfg.Data)
 	}
-	rsp, _ := http.NewRequest(requestConfig.Method, requestConfig.URL, body)
-	return SendHttpRequest(rsp, client, requestConfig)
+	rsp, _ := http.NewRequest(cfg.Method, cfg.URL, cfg.Data.(io.Reader))
+	return SendHttpRequest(rsp, client, cfg)
 }
 
 func SendHttpRequest(request *http.Request, client *http.Client, config *Config) (*http.Response, error) {
@@ -192,16 +197,16 @@ func parseRequestData(reqData interface{}) io.Reader {
 	return strings.NewReader(data.Encode())
 }
 
-func parseToRequestConfig(config interface{}) *Config {
+func parseToRequestConfig(config interface{}) (cfg *Config) {
 	switch v := config.(type) {
 	case string:
-		return &Config{URL: v}
+		cfg = &Config{URL: v}
 	case Config:
-		return &v
+		cfg = &v
 	case *Config:
-		return v
+		cfg = v
 	}
-	return &Config{}
+	return cfg
 }
 
 func ReadResponseBody(body io.ReadCloser) ([]byte, error) {
