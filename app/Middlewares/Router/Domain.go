@@ -4,10 +4,10 @@ import (
 	"log"
 	"strings"
 
-	"Marvel/app/Caches/App"
-	"Marvel/app/Caches/Router"
-	"Marvel/app/Interfaces"
-	"Marvel/config"
+	"Pigeon/app/Caches/App"
+	"Pigeon/app/Caches/Router"
+	"Pigeon/app/Interfaces"
+	"Pigeon/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -66,6 +66,7 @@ func DomainRouter(c *gin.Context) {
 	log.Println("routing domain", c.Request.Host, "to path", routePath)
 	// find handler in route path map
 	if h, ok := Router.RootRouterMap[routePath]; ok {
+		c.Set("domain_route_path", routePath)
 		h.HandlerFunc(c)
 	} else {
 		c.Status(404)

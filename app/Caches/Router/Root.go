@@ -1,7 +1,7 @@
 package Router
 
 import (
-	"Marvel/app/Interfaces"
+	"Pigeon/app/Interfaces"
 )
 
 var RootRouterMap Interfaces.RoutePathControllerMap
