@@ -1,13 +1,26 @@
 package utils
 
 import (
+	"strconv"
 	"unsafe"
 )
 
-func BytesToString(bytes []byte) string {
-	return *(*string)(unsafe.Pointer(&bytes))
+// StringToBytes converts string to byte slice without a memory allocation.
+func StringToBytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(
+		&struct {
+			string
+			Cap int
+		}{s, len(s)},
+	))
 }
 
-func StringToBytes(str string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&str))
+// BytesToString converts byte slice to string without a memory allocation.
+func BytesToString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+func ParseInt(s string) int {
+	i, _ := strconv.Atoi(s)
+	return i
 }
